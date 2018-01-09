@@ -1,0 +1,324 @@
+﻿<script src="~/Scripts/jquery-2.0.3.min.js"></script>
+<link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+
+
+<script>
+    var CodigoGlobal = "";
+    var CodigoEditarGlobal = "";
+    $(document).on("ready", function () {
+
+        GetAll();
+        GetAllCategoria("");
+
+        $('#btnnuevo').on('click', function () {
+            Limpiar();
+            GetAllCategoria("");
+            document.getElementById("btnregistrar").style.display = "";
+            document.getElementById("btnactualizar").style.display = "none";
+
+        });
+
+        //REGISTRAR PRODUCTOS
+        $('#btnregistrar').on('click', function () {           
+            var productos = new Object();
+            productos.Nombre = $('#idnombre').val();
+            productos.Precio = $('#idprecio').val();
+            productos.stock = $('#idstock').val();
+            productos.Codigo_Categoria = $('#idcategoria').val();
+            RegistrarProducto(JSON.stringify(productos));
+
+        });
+
+        $("#btnaceptarConfir").click(function () {
+
+
+            var url = '/api/Productos/' + CodigoGlobal;
+            $.ajax({
+                url: url,
+                type: 'DELETE',
+                //data: Producto,
+                contentType: "application/json; charset=utf-8",
+                success: function (Response) {
+                    $('#ModalConfirmacion').modal('hide');
+                    GetAll();
+                }
+
+            });
+
+        });
+           
+
+        function RegistrarProducto(Producto) {
+            var url = '/api/Productos';
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: Producto,
+                contentType: "application/json; charset=utf-8",
+                success: function (Response) {
+                    GetAll();
+                    $('#myModal').modal('hide');
+                    
+                }
+
+            });
+
+        }
+
+
+        $('#btnactualizar').on('click', function () {
+            var productos = new Object();
+            productos.Codigo = CodigoEditarGlobal;
+            productos.Nombre = $('#idnombre').val();
+            productos.Precio = $('#idprecio').val();
+            productos.stock = $('#idstock').val();
+            productos.Codigo_Categoria = $('#idcategoria').val();
+            ActualizarProducto(JSON.stringify(productos));
+
+        });
+
+        //ACTUALIZAR PRODUCTO
+        function ActualizarProducto(Producto) {
+            var url = '/api/Productos';
+            $.ajax({
+                url: url,
+                type: 'PUT',
+                data: Producto,
+                contentType: "application/json; charset=utf-8",
+                success: function (Response) {
+                    GetAll();
+                    $('#myModal').modal('hide');
+                }
+
+            });
+
+        }       
+
+    });
+
+    function Eliminar(r) {
+        //IdActorGlobal = r.id;
+        //iGlobal = r.parentNode.parentNode.rowIndex;
+        var Codigo = $(r).closest('tr').find('td:eq(0)').text();
+        var Nombre = $(r).closest('tr').find('td:eq(1)').text();
+        CodigoGlobal = Codigo;
+        //EliminarProducto(Codigo);
+        document.getElementById("idmensaje").innerHTML = "¿Deseas Eliminar el Producto " + Nombre + "?"
+        $('#ModalConfirmacion').modal('show');
+        //document.getElementById("idmensaje").innerHTML = "¿Deseas Eliminar el Actor " + '"' + nombre + '"' + "?"
+        //$('#ModalConfirmacion').modal('show');
+
+    }
+
+    function Editar(r) {
+       
+        document.getElementById("btnregistrar").style.display = "none";
+        document.getElementById("btnactualizar").style.display = "";
+        var Codigo = $(r).closest('tr').find('td:eq(0)').text();
+        GetProductoById(Codigo);
+     
+
+    }
+   
+
+    //LISTAR TODOS LOS PRODUCTOS
+    function GetAll() {
+        $("#tbtable tbody tr").remove();
+        var item = "";
+        $.getJSON('http://localhost:8389/api/Productos', function (data) {
+
+            for (var i = 0; i < data.length; i++) {
+
+                var cadenabuttonEdit = "<button style='margin-right: 4px' type='button' onclick='Editar(this)' class='btn btn-primary' id=''>Editar<i class='glyph-icon tooltip-button demo-icon icon-pencil'></i></button>";
+                var cadenabuttonDelete = "<button type='button' class='btn btn-danger' onclick='Eliminar(this)' id=''>Eliminar<i class='glyph-icon tooltip-button demo-icon icon-trash' title='' data-original-title='.icon-trash' ></i></button>";
+
+                //item += "<tr><td>" + data[i].Nombre + "</td><td>" + data[i].Precio + "</td><td>" + data[i].Stock + "</td><td>" + data[i].Name_Categoria + "</td></tr>"
+                item += "<tr><td style='text-align:center'>" + data[i].Codigo + "</td><td style='text-align:center'>" + data[i].Nombre + "</td><td style='text-align:center'>" + data[i].Precio + "</td><td style='text-align:center'>" + data[i].Stock + "</td><td style='text-align:center'>" + data[i].Name_Categoria + "</td><td style='text-align:center'>" + cadenabuttonEdit + cadenabuttonDelete + "</td></tr>"
+
+            }
+            $('#tbtable').append(item);
+
+        });
+    }
+
+    //LISTAR TODOS LOS PRODUCTOS
+    function GetProductoById(idProducto) {
+        var url = '/api/Productos/' + idProducto;
+        $.getJSON(url)
+        .done(function (data) {      
+
+            $('#myModal').modal('show');
+            CodigoEditarGlobal = data.Codigo;
+            $('#idnombre').val(data.Nombre);
+            $('#idprecio').val(data.Precio);
+            $('#idstock').val(data.Stock);
+            $('#idcategoria').val(data.Codigo_Categoria);
+            GetAllCategoria(data.Codigo_Categoria);
+         
+            
+
+        });
+
+    }
+
+    function Limpiar() {
+
+        document.getElementById("idnombre").value = "";
+        document.getElementById("idprecio").value= "";
+        document.getElementById("idstock").value= "";
+ 
+    }
+
+    function selectInCombo(combo, val) {
+
+        for (var indice = 0 ; indice < document.getElementById(combo).length; indice++) {
+
+            if (document.getElementById(combo).options[indice].value == val)
+                document.getElementById(combo).selectedIndex = indice;
+        }
+
+    }
+
+    function GetAllCategoria(id) {
+        $("#idcategoria").find("option").remove();
+        var item = "";
+        $.getJSON('http://localhost:8389/api/Categoria', function (response) {
+
+            var Cadena = "<option value='0' selected>Seleccionar</option>";
+            for (var i = 0; i < response.length; i++) {
+
+                Cadena = Cadena + " " + "<option value='" + response[i].Codigo + "'>" + response[i].Descripcion + "</option>";
+
+            }
+            $("#idcategoria").append(Cadena);
+
+            if (id != "") {
+                selectInCombo("idcategoria", id)
+            }
+        });
+    }
+
+
+
+</script>
+
+<div class="container">
+
+    <div class="modal fade" id="ModalConfirmacion" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-content" style="width: 450px;">
+                <div class="modal-header" style="border-bottom:none;border-top:none">
+                    <button id="btnclose" type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h4 class="modal-title" style="font-family: initial" id="idmensaje"></h4>
+                </div>
+                <div class="modal-footer" style="border-bottom:none;border-top:none">
+                    <button id="btncancelarConfir" type="button" class="btn btn-danger" data-dismiss="modal">Cancelar <i class="glyph-icon icon-times"></i></button>
+                    <button id="btnaceptarConfir" type="button" class="btn btn-primary">Aceptar <i class="glyph-icon icon-check"></i></button>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content" style="width: 450px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Productos</h4>
+                </div>
+                <div class="modal-body">
+                    <table border="0">
+
+                        <tr style="height: 40px">
+                            <td>
+                                <label class="col-sm-3 control-label">Nombre:</label>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" style="width: 300px" id="idnombre" placeholder="Ingresar Nombre..."> 
+                            </td>
+                        </tr>
+
+                        <tr style="height: 40px">
+                            <td>
+                                <label class="col-sm-3 control-label">Precio:</label>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" style="width: 300px"  id="idprecio" placeholder="Ingresa Precio ...">                              
+                            </td>
+                        </tr>
+                        <tr style="height: 40px">
+                            <td>
+                                <label class="col-sm-3 control-label">Stock:</label>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" style="width: 300px"  id="idstock" placeholder="Ingresar Stock...">
+                            </td>
+                        </tr>
+                        <tr style="height: 40px">
+                            <td>
+                                <label class="col-sm-3 control-label">Categoria:</label>
+                            </td>
+                            <td>
+                                <select type="text" style="width: 300px" class="form-control" id="idcategoria"></select>                            </td>
+                        </tr>
+
+                        
+
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnactualizar" style="display:none" type="button" class="btn btn-primary">Actualizar <i class="glyph-icon icon-check"></i></button>
+
+                    <button id="btnregistrar" type="button" class="btn btn-primary">Registrar <i class="glyph-icon icon-check"></i></button>
+                    <button id="btncancelar" type="button" class="btn btn-danger" data-dismiss="modal">Cancelar <i class="glyph-icon icon-times"></i></button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+    <div class="panel-body">
+        <h3 class="title-hero">
+            Mantenimiento de Productos
+        </h3>
+        <br />
+        <div class="example-box-wrapper">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        @*<label class="col-sm-1 control-label" style="visibility: collapse"></label>*@
+                        <div class="col-sm-3">                       
+                            @*<button type="button" class="btn btn-success" style="width:120px" id="btnagregarnota">Nuevo<i class="glyph-icon icon-plus"></i></button>*@
+                            <button type="button" id="btnnuevo" class="btn btn-primary" style="width:120px" data-toggle="modal" data-target="#myModal">Nuevo</button>
+                        </div>
+                    </div>
+                </div>                
+            </div>
+
+            <table id="tbtable" class="table table-striped table-advance table-hover">
+                <thead>
+                    <tr>
+                        <th style="text-align:center">Codigo</th>
+                        <th style="text-align:center">Nombre</th>
+                        <th style="text-align:center">Precio</th>
+                        <th style="text-align:center">Stock</th>
+                        <th style="text-align:center">Categoria</th>
+                        <th style="text-align:center" colspan="2">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
